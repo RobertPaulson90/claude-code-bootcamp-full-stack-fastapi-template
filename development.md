@@ -1,5 +1,11 @@
 # FastAPI Project - Development
 
+## Prerequisites
+
+- [uv](https://docs.astral.sh/uv/) for the backend and the repo's hooks.
+- [Bun](https://bun.sh/) for the frontend, the generated client and the email templates.
+- Docker for PostgreSQL and Mailpit. Without it, the backend tests need another PostgreSQL on `localhost:5432`.
+
 ## Local Development
 
 For local development, run PostgreSQL and Mailpit with Docker Compose, and run the FastAPI and Vite development servers locally.
