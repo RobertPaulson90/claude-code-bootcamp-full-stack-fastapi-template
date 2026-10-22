@@ -8,3 +8,5 @@ backend/app/frontend/
 /playwright/.cache/
 
 .claude/worktrees/
+# merge-gate worktrees, evidence logs and state
+.land/
