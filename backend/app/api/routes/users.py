@@ -96,9 +96,9 @@ def update_user_me(
     previous_name = current_user.full_name
     current_user.sqlmodel_update(user_data)
     session.add(current_user)
-    session.commit()
     if current_user.full_name and current_user.full_name != previous_name:
-        crud.mark_name_edited(session=session, user_id=current_user.id)
+        crud.mark_name_edited(session=session, user_id=current_user.id, commit=False)
+    session.commit()
     session.refresh(current_user)
     return current_user
 
@@ -158,8 +158,10 @@ def register_user(session: SessionDep, user_in: UserRegister) -> Any:
             detail="The user with this email already exists in the system",
         )
     user_create = UserCreate.model_validate(user_in)
-    user = crud.create_user(session=session, user_create=user_create)
-    crud.create_onboarding(session=session, user_id=user.id)
+    user = crud.create_user(session=session, user_create=user_create, commit=False)
+    crud.create_onboarding(session=session, user_id=user.id, commit=False)
+    session.commit()
+    session.refresh(user)
     return user
 
 

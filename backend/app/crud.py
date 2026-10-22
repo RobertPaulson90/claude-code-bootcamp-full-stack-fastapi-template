@@ -16,12 +16,17 @@ from app.models import (
 )
 
 
-def create_user(*, session: Session, user_create: UserCreate) -> User:
+def create_user(
+    *, session: Session, user_create: UserCreate, commit: bool = True
+) -> User:
     db_obj = User.model_validate(
         user_create, update={"hashed_password": get_password_hash(user_create.password)}
     )
     session.add(db_obj)
-    session.commit()
+    if commit:
+        session.commit()
+    else:
+        session.flush()
     session.refresh(db_obj)
     return db_obj
 
@@ -69,22 +74,32 @@ def authenticate(*, session: Session, email: str, password: str) -> User | None:
     return db_user
 
 
-def create_onboarding(*, session: Session, user_id: uuid.UUID) -> Onboarding:
+def create_onboarding(
+    *, session: Session, user_id: uuid.UUID, commit: bool = True
+) -> Onboarding:
     db_obj = Onboarding(user_id=user_id)
     session.add(db_obj)
-    session.commit()
+    if commit:
+        session.commit()
+    else:
+        session.flush()
     session.refresh(db_obj)
     return db_obj
 
 
-def _mark_step(*, session: Session, user_id: uuid.UUID, step: str) -> None:
+def _mark_step(
+    *, session: Session, user_id: uuid.UUID, step: str, commit: bool = True
+) -> None:
     # Users without a row are not onboarding.
     onboarding = lock_onboarding(session=session, user_id=user_id)
     if onboarding is None:
         return
     _set_step(onboarding=onboarding, step=step)
     session.add(onboarding)
-    session.commit()
+    if commit:
+        session.commit()
+    else:
+        session.flush()
 
 
 def _set_step(*, onboarding: Onboarding, step: str) -> None:
@@ -109,8 +124,10 @@ def mark_first_item(*, session: Session, user_id: uuid.UUID) -> None:
     _mark_step(session=session, user_id=user_id, step="first_item_at")
 
 
-def mark_name_edited(*, session: Session, user_id: uuid.UUID) -> None:
-    _mark_step(session=session, user_id=user_id, step="name_edited_at")
+def mark_name_edited(
+    *, session: Session, user_id: uuid.UUID, commit: bool = True
+) -> None:
+    _mark_step(session=session, user_id=user_id, step="name_edited_at", commit=commit)
 
 
 def lock_onboarding(*, session: Session, user_id: uuid.UUID) -> Onboarding | None:

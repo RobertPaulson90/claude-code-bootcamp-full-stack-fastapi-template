@@ -42,6 +42,69 @@ def test_signup_creates_onboarding_with_no_steps(
     assert onboarding.completed_at is None
 
 
+@pytest.mark.parametrize("after_hook", [False, True])
+def test_signup_hook_failure_rolls_back_and_allows_retry(
+    client: TestClient, after_hook: bool
+) -> None:
+    body = {"email": random_email(), "password": random_lower_string()}
+    original = crud.create_onboarding
+
+    def fail(**kwargs: Any) -> None:
+        if after_hook:
+            original(**kwargs)
+        raise RuntimeError("onboarding hook failed")
+
+    with patch("app.crud.create_onboarding", side_effect=fail):
+        with pytest.raises(RuntimeError, match="onboarding hook failed"):
+            client.post(f"{settings.API_V1_STR}/users/signup", json=body)
+
+    with Session(engine) as session:
+        assert crud.get_user_by_email(session=session, email=body["email"]) is None
+
+    retry = client.post(f"{settings.API_V1_STR}/users/signup", json=body)
+    assert retry.status_code == 200
+    with Session(engine) as session:
+        rows = _onboarding_rows(session, retry.json()["id"])
+        assert len(rows) == 1
+        assert rows[0].completed_at is None
+
+
+@pytest.mark.parametrize("after_hook", [False, True])
+def test_profile_hook_failure_rolls_back_and_allows_identical_retry(
+    client: TestClient, after_hook: bool
+) -> None:
+    user_id, headers = _signup_and_login(client)
+    original = crud.mark_name_edited
+
+    def fail(**kwargs: Any) -> None:
+        if after_hook:
+            original(**kwargs)
+        raise RuntimeError("onboarding hook failed")
+
+    with patch("app.crud.mark_name_edited", side_effect=fail):
+        with pytest.raises(RuntimeError, match="onboarding hook failed"):
+            client.patch(
+                f"{settings.API_V1_STR}/users/me",
+                headers=headers,
+                json={"full_name": "Ada Lovelace"},
+            )
+
+    with Session(engine) as session:
+        onboarding = _onboarding_rows(session, user_id)[0]
+        user = session.get(User, onboarding.user_id)
+        assert user is not None
+        assert user.full_name is None
+        assert onboarding.name_edited_at is None
+
+    _patch_me(client, headers, {"full_name": "Ada Lovelace"})
+    with Session(engine) as session:
+        onboarding = _onboarding_rows(session, user_id)[0]
+        user = session.get(User, onboarding.user_id)
+        assert user is not None
+        assert user.full_name == "Ada Lovelace"
+        assert onboarding.name_edited_at is not None
+
+
 def test_admin_created_user_has_no_onboarding(
     client: TestClient, superuser_token_headers: dict[str, str], db: Session
 ) -> None:
