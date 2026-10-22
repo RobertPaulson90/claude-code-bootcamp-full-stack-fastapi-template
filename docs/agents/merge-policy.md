@@ -16,6 +16,7 @@ checks and the merge itself come from here.
 | `MERGE_METHOD` | `merge` | feature-factory merges every ticket with `--no-ff`; a merge commit keeps those ticket commits. |
 | `MAX_FIX_ROUNDS` | `2` | Fix rounds before the steward stops the line and hands the PR to a person. |
 | `AUTO_MERGE_TIERS` | `low`, `normal` | Tiers the steward may merge on its own when nothing blocks. `high` always needs a person. |
+| `NOT_VERIFIED` | Playwright e2e; migrations against production-sized data; delivery through a real SMTP server | What the evidence steps below never cover. Shown on every packet. |
 | `TEST_PATHS` | `backend/tests/*`, `frontend/tests/*`, `*test_*.py`, `*.spec.ts`, `*.test.ts` | What counts as a test when checking whether a change came with one. |
 
 ## Risk rules (paths)

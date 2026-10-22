@@ -144,12 +144,17 @@ def load_policy() -> dict:
     tables = parse_tables(path.read_text())
     keys = {first_span(r[0]): code_spans(r[1]) for r in tables.get("merge policy", [])}
     project_tables = parse_tables((ROOT / PROJECT_PATH).read_text())
-    project = {first_span(r[0]): first_span(r[1]) for r in project_tables.get("project config", [])}
+    # a value with one code span is a command; anything longer is prose, kept whole
+    project = {
+        first_span(r[0]): first_span(r[1]) if len(re.findall(r"`[^`]*`", r[1])) == 1 else r[1].replace("`", "")
+        for r in project_tables.get("project config", [])
+    }
     return {
         "merge_method": (keys.get("MERGE_METHOD") or ["merge"])[0],
         "max_fix_rounds": int((keys.get("MAX_FIX_ROUNDS") or ["2"])[0]),
         "auto_merge_tiers": keys.get("AUTO_MERGE_TIERS") or ["low"],
         "test_paths": keys.get("TEST_PATHS") or [],
+        "not_verified": " ".join(keys.get("NOT_VERIFIED") or []) or project.get("UNTESTED", ""),
         "path_rules": [
             {"pattern": first_span(r[0]), "tier": r[1].strip(), "why": r[2].strip()}
             for r in tables.get("risk rules (paths)", [])
@@ -435,7 +440,7 @@ def cmd_facts(args) -> None:
         "reviews_required": reviews_required,
         "evidence_steps": steps,
         "ci": ci, "checks": checks,
-        "untested": policy["project"].get("UNTESTED", ""),
+        "untested": policy["not_verified"],
         "author_review_list": review_list_items(p.get("body") or ""),
     }
     d = run_dir(pr, head)

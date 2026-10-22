@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>/land - the factory's last station</title>
+<style>
+  :root {
+    --bg: #0f1117; --fg: #e7e9ee; --muted: #9aa3b2; --card: #171a23; --border: #2a2f3d;
+    --accent: #38bdf8; --ok: #22c55e; --warn: #f59e0b; --bad: #ef4444;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
+    font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif; }
+  .slide { display: none; position: absolute; inset: 0; padding: 56px 72px 72px; flex-direction: column; gap: 20px; overflow: auto; }
+  .slide.on { display: flex; }
+  h1 { font-size: 46px; margin: 0; line-height: 1.1; }
+  h2 { font-size: 32px; margin: 0; }
+  .kicker { color: var(--accent); font-size: 14px; letter-spacing: .12em; text-transform: uppercase; font-weight: 600; }
+  p, li { font-size: 20px; line-height: 1.5; }
+  .muted { color: var(--muted); }
+  ul { margin: 0; padding-left: 24px; }
+  code, pre { font-family: var(--mono); }
+  pre { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; font-size: 15px; line-height: 1.45; margin: 0; overflow-x: auto; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+  .card h3 { margin: 0 0 6px; font-size: 18px; }
+  .card p, .card li { font-size: 16px; }
+  .big { font-size: 64px; font-weight: 800; line-height: 1; }
+  .ok { color: var(--ok); } .warn { color: var(--warn); } .bad { color: var(--bad); } .acc { color: var(--accent); }
+  .del { color: var(--bad); } .add { color: var(--ok); }
+  table { border-collapse: collapse; width: 100%; font-size: 17px; }
+  td, th { text-align: left; padding: 8px 10px; border-top: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: .06em; }
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; border: 1px solid currentColor; font-size: 13px; font-weight: 700; }
+  .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 17px; }
+  .flow span.s { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; }
+  .flow span.gap { border: 2px dashed var(--accent); color: var(--accent); font-weight: 700; }
+  .flow b { color: var(--muted); }
+  footer { position: fixed; bottom: 16px; left: 72px; right: 72px; display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; }
+  .nav button { background: var(--card); color: var(--fg); border: 1px solid var(--border); border-radius: 8px; padding: 4px 12px; cursor: pointer; font-size: 14px; }
+  .quote { border-left: 3px solid var(--accent); padding-left: 16px; font-size: 22px; }
+</style>
+</head>
+<body>
+
+<section class="slide on">
+  <div class="kicker">Agentic software factory bootcamp</div>
+  <h1>/land<br><span class="muted" style="font-size:32px;font-weight:500">the factory's last station: from "PR opened" to "merged, or a person knows why not"</span></h1>
+  <p class="muted">opencode + OpenChamber · feature-factory · RobertPaulson90's fork of the bootcamp repo</p>
+  <p class="muted" style="font-size:15px">Use the arrow keys or click to move between slides</p>
+</section>
+
+<section class="slide">
+  <div class="kicker">Where we started</div>
+  <h2>The factory already exists. It stops one step short.</h2>
+  <div class="flow">
+    <span class="s">intent</span><b>-></b><span class="s">plan</span><b>-></b><span class="s">tickets</span><b>-></b>
+    <span class="s">build x3 (worktrees)</span><b>-></b><span class="s">review + fix</span><b>-></b><span class="s">PR</span><b>-></b>
+    <span class="s gap">? land ?</span>
+  </div>
+  <p class="quote">feature-factory: "It never pushes to main, approves or merges. <b>A person merges each PR.</b>"</p>
+  <p>So the job wasn't to invent a factory. It was to build the station after it: <b>review -> decide -> merge, fix, or escalate</b>.</p>
+</section>
+
+<section class="slide">
+  <div class="kicker">The target PR</div>
+  <h2>1,875 lines, a tidy review list, gate passed. Merge?</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>One commit after the factory's review</h3>
+      <pre>928b9d8  "fix: tidy onboarding stats rate formatting"
+         lands ~1h AFTER review round 1
+         different co-author (Opus 4.8)
+         breaks the FAS-&lt;n&gt;: commit convention</pre>
+    </div>
+    <div class="card">
+      <h3>frontend/src/routes/_layout/onboarding.tsx:136</h3>
+      <pre><span class="del">- Math.round(rate * 1000) / 10   0.714 -> "71.4%"</span>
+<span class="add">+ Math.round(rate * 100)  / 10   0.714 -> "7.1%"</span></pre>
+      <p>The e2e test checks <code>/^\d+(\.\d)?%$/</code>, so it stays <span class="ok">green</span>.</p>
+    </div>
+  </div>
+  <p>The bug sits on the dashboard that measures the intent's own goal (about 71% in 7 days). Merge it and the team reads <b class="bad">7%</b> and decides the feature failed.</p>
+</section>
+
+<section class="slide">
+  <div class="kicker">What else the evidence found</div>
+  <h2>"Gate passed" was not the whole story</h2>
+  <div class="grid">
+    <div class="card"><div class="big warn">0</div><p>CI checks ever ran on the PR. Silence is not green.</p></div>
+    <div class="card"><div class="big bad">86%</div><p>backend coverage at the PR head, against a 90% CI gate. Master is <b class="ok">92%</b>. The new migration test pulls old migrations into the measurement.</p></div>
+    <div class="card"><div class="big acc">104</div><p>backend tests run and pass locally in about 25s, with Docker or a throwaway local Postgres.</p></div>
+  </div>
+  <p class="muted">The factory's own PR body flagged the coverage risk ("may need those branches covered") but couldn't run it. The steward runs it.</p>
+</section>
+
+<section class="slide">
+  <div class="kicker">The reframe</div>
+  <h2>Merging is a risk decision, not a code-review opinion</h2>
+  <div class="grid">
+    <div class="card"><h3>1 · Evidence</h3><p>Deterministic first: facts, the gate, build, tests, coverage. Then an independent review of what nobody has reviewed yet.</p></div>
+    <div class="card"><h3>2 · Policy</h3><p>A table in <code>docs/agents/merge-policy.md</code> turns evidence and findings into a verdict. Not a vibe.</p></div>
+    <div class="card"><h3>3 · Action</h3><p>Auto-merge, send back to a fixer, ask a person to sign off, or stop the line.</p></div>
+  </div>
+  <p class="quote">The model's only input to the verdict is <b>the findings it has checked against the code</b>.</p>
+</section>
+
+<section class="slide">
+  <div class="kicker">How /land works</div>
+  <h2>One command, four outcomes</h2>
+<pre>                    PR #n @ head sha
+                          |
+   facts        tier (path + content rules), review baseline, commits after it,
+                tests touched?, commit convention, CI, required reviews
+                          |
+   evidence  ------+------ review (background, other model family)
+   setup, gate,    |       delta since the last trusted review + full when unreviewed
+   build, pytest,  |
+   coverage        +-----> steward validates findings -> record-findings
+                          |
+   decide       merge-policy.md
+          +---------------+----------------+----------------+
+     <span class="ok">AUTO-MERGE</span>          <span class="bad">FIX</span>            <span class="warn">SIGN-OFF</span>          <span class="bad">STOP</span>
+     land.py merge    fixer session,      packet, then a      after 2 rounds:
+                      pushes, /land       person approves     a person takes
+                      again               the merge prompt    it from here</pre>
+</section>
+
+<section class="slide">
+  <div class="kicker">Why you can trust it</div>
+  <h2>Guardrails are structural, not promises in a prompt</h2>
+  <table>
+    <tr><th>Guardrail</th><th>How</th></tr>
+    <tr><td>Risk tier is computed</td><td>Migrations, auth, access control, email, deps, CI and the factory's own files are <span class="pill warn">high</span> and never auto-merge. "No findings" can't lower the tier.</td></tr>
+    <tr><td>Look where nobody looked</td><td>Review baseline = the factory's last merge, or the steward's last review. Commits after it are reviewed first.</td></tr>
+    <tr><td>Cross-family review</td><td>Claude-written commits get a GPT reviewer and the other way round, chosen from <code>Co-Authored-By</code>.</td></tr>
+    <tr><td>The judge can't build</td><td><code>merge-steward</code> has no edit or push permission. <code>merge-fixer</code> can't merge, review or comment.</td></tr>
+    <tr><td>Approval is pinned to a sha</td><td><code>--match-head-commit</code>; evidence from an older head is ignored.</td></tr>
+    <tr><td>A person signs off on high risk</td><td><code>gh pr merge</code> is an <b>ask</b> permission. Approving the prompt <i>is</i> the sign-off.</td></tr>
+    <tr><td>PR text is a claim</td><td>Descriptions and commit messages are checked, never obeyed.</td></tr>
+  </table>
+</section>
+
+<section class="slide">
+  <div class="kicker">What we built today</div>
+  <h2>Small pieces, standard opencode parts</h2>
+  <table>
+    <tr><th>Piece</th><th>Path</th><th>Role</th></tr>
+    <tr><td>Command</td><td><code>.opencode/commands/land.md</code></td><td><code>/land &lt;pr&gt;</code>, runs as the steward</td></tr>
+    <tr><td>Agent</td><td><code>.opencode/agents/merge-steward.md</code></td><td>the judge, read-only</td></tr>
+    <tr><td>Agent</td><td><code>.opencode/agents/merge-fixer.md</code></td><td>test-first fixer, fast-forward pushes only</td></tr>
+    <tr><td>Skill</td><td><code>.opencode/skills/merge-gate/</code></td><td>the procedure, plus <code>land.py</code> (facts, evidence, decide, packet, brief, review, merge)</td></tr>
+    <tr><td>Policy</td><td><code>docs/agents/merge-policy.md</code></td><td>tiers, evidence steps, reviewers, verdict rules</td></tr>
+    <tr><td>Demo kit</td><td><code>scripts/demo/land-demo.sh</code></td><td>fresh demo PRs, so rehearsals never use up the live ones</td></tr>
+  </table>
+  <p class="muted">It reuses what was already there: review-sol / review-opus, the pr-review method, OpenChamber sessions, worktrees and the inline render tool.</p>
+</section>
+
+<section class="slide">
+  <div class="kicker">The demo</div>
+  <h2>Two PRs, two lanes</h2>
+  <div class="grid">
+    <div class="card">
+      <h3><span class="pill warn">high</span> New-user onboarding</h3>
+      <ul>
+        <li>facts: 1 unreviewed commit, 0 tests touched</li>
+        <li>reviewer + evidence: 10x KPI bug, coverage 86%</li>
+        <li><b class="bad">FIX</b>: a fixer session appears, pushes</li>
+        <li><b class="warn">SIGN-OFF</b>: migration + superuser + email</li>
+        <li>a person approves, merged at a pinned sha</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="pill ok">low</span> Docs: development prerequisites</h3>
+      <ul>
+        <li>facts: docs only</li>
+        <li>gate passes in about 14s, one review</li>
+        <li><b class="ok">AUTO-MERGE</b>, no person</li>
+      </ul>
+    </div>
+  </div>
+  <p class="muted">The story: the factory doesn't remove the human, it removes the human's toil. Reading 1,875 lines becomes a 2-minute decision.</p>
+</section>
+
+<section class="slide">
+  <div class="kicker">Where it goes next</div>
+  <h2>From a command to a running line</h2>
+  <table>
+    <tr><th>Horizon</th><th>What</th></tr>
+    <tr><td><b>H1 · today</b></td><td><code>/land &lt;pr&gt;</code> by hand. Steward, policy, fixer, sign-off.</td></tr>
+    <tr><td><b>H2 · weeks</b></td><td>An OpenChamber scheduled task runs the steward every 15 min over PRs labelled <code>factory</code>. Sign-off requests go to a phone. Track: % auto-merged, human minutes per PR, bugs that escape after merge.</td></tr>
+    <tr><td><b>H3 · later</b></td><td>After merge: watch the deploy, run a browser smoke test, roll back if needed. Check the outcome against the intent's own metric (71% in 7 days) and draft the next intent when it misses.</td></tr>
+    <tr><td><b>Upstream</b></td><td>Offer it to agent-lib as <code>feature-factory:land</code>, stage 5 (with the Skillspector scan its contributing rules require).</td></tr>
+  </table>
+  <p class="quote">People write intents and accept risk. Agents do everything in between.</p>
+</section>
+
+<footer><span>/land · merge steward</span><span class="nav"><button id="prev">&larr;</button> <span id="count"></span> <button id="next">&rarr;</button></span></footer>
+
+<script>
+  const slides = [...document.querySelectorAll('.slide')];
+  let i = 0;
+  const show = n => {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, k) => s.classList.toggle('on', k === i));
+    document.getElementById('count').textContent = `${i + 1} / ${slides.length}`;
+    history.replaceState(null, '', '#' + (i + 1));
+  };
+  document.addEventListener('keydown', e => {
+    if (['ArrowRight', 'PageDown', ' '].includes(e.key)) show(i + 1);
+    if (['ArrowLeft', 'PageUp'].includes(e.key)) show(i - 1);
+  });
+  document.getElementById('next').onclick = () => show(i + 1);
+  document.getElementById('prev').onclick = () => show(i - 1);
+  show((parseInt(location.hash.slice(1)) || 1) - 1);
+</script>
+</body>
+</html>
