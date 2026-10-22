@@ -306,13 +306,13 @@ def cmd_facts(args) -> None:
 
     # commits
     team = policy["project"].get("LINEAR_TEAM", "")
-    fmt = "%H%x1f%P%x1f%an%x1f%cI%x1f%s%x1f%(trailers:key=Co-Authored-By,valueonly,separator=; )%x1e"
+    fmt = "%H%x02%P%x02%an%x02%cI%x02%s%x02%(trailers:key=Co-Authored-By,valueonly,separator=; )%x03"
     commits = []
-    for rec in git("log", f"--format={fmt}", f"{merge_base}..{head}").split("\x1e"):
+    for rec in git("log", f"--format={fmt}", f"{merge_base}..{head}").split("\x03"):
         rec = rec.strip("\n")
         if not rec:
             continue
-        sha, parents, author, date, subject, trailers = rec.split("\x1f")
+        sha, parents, author, date, subject, trailers = rec.split("\x02")
         is_merge = len(parents.split()) > 1
         commits.append({
             "sha": sha, "subject": subject, "author": author, "date": date,
@@ -344,9 +344,9 @@ def cmd_facts(args) -> None:
         baseline = prior["head"]
         baseline_source = f"steward review at {prior['head'][:12]} ({prior['verdict']}, {prior['at']})"
     elif factory_branch:
-        first_parent = git("log", "--first-parent", "--format=%H%x1f%s", f"{merge_base}..{head}").splitlines()
+        first_parent = git("log", "--first-parent", "--format=%H%x02%s", f"{merge_base}..{head}").splitlines()
         for line in first_parent:  # newest first
-            sha, subject = line.split("\x1f", 1)
+            sha, subject = line.split("\x02", 1)
             if re.match(rf"^Merge (review round \d+|{team}-\d+)", subject):
                 baseline = sha
                 baseline_source = f"feature-factory review, last factory merge {sha[:12]} \"{subject}\""
