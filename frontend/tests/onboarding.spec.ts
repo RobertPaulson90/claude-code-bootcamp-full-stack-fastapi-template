@@ -157,6 +157,28 @@ async function signUpInFreshContext(browser: Browser) {
 }
 
 test.describe("Onboarding stats page", () => {
+  for (const [rate, expected] of [
+    [0.5, "50%"],
+    [1, "100%"],
+    [0.12345, "12.3%"],
+  ] as const) {
+    test(`Displays completion fraction ${rate} as ${expected}`, async ({
+      page,
+    }) => {
+      await page.route("**/api/v1/onboarding/stats?*", (route) =>
+        route.fulfill({
+          json: {
+            registered: 100,
+            completed_within_7d: rate * 100,
+            completion_rate: rate,
+          },
+        }),
+      )
+      await page.goto("/onboarding")
+      await expect(page.getByTestId("stat-rate")).toHaveText(expected)
+    })
+  }
+
   test("Superuser opens the stats page from the sidebar", async ({ page }) => {
     await page.goto("/")
     await page.getByRole("link", { name: "Onboarding" }).click()
