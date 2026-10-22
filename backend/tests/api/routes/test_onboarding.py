@@ -1,5 +1,6 @@
 import logging
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from unittest.mock import patch
@@ -279,6 +280,66 @@ def test_onboarding_me_is_completed_when_all_steps_done(
         "invite_sent": True,
         "completed": True,
     }
+
+
+def test_competing_steps_complete_onboarding(client: TestClient, db: Session) -> None:
+    user_id, headers = _signup_and_login(client)
+    onboarding = _onboarding_rows(db, user_id)[0]
+    onboarding.invite_sent_at = datetime.now(UTC)
+    db.add(onboarding)
+    db.commit()
+    user_uuid = onboarding.user_id
+    db.commit()
+
+    loaded = threading.Barrier(2)
+    first_read = threading.Event()
+    release_first = threading.Event()
+    second_attempt = threading.Event()
+    second_set = threading.Event()
+    original_set_step = crud._set_step
+
+    def set_step(*, onboarding: Onboarding, step: str) -> None:
+        if step == "first_item_at":
+            first_read.set()
+            assert release_first.wait(timeout=10)
+        original_set_step(onboarding=onboarding, step=step)
+        if step == "name_edited_at":
+            second_set.set()
+
+    def mark(first: bool) -> None:
+        with Session(engine) as session:
+            # Keep a stale identity-map entry: a locking read must refresh it.
+            cached = session.get(Onboarding, user_uuid)
+            assert cached is not None
+            loaded.wait(timeout=10)
+            if first:
+                crud.mark_first_item(session=session, user_id=user_uuid)
+            else:
+                assert first_read.wait(timeout=10)
+                second_attempt.set()
+                crud.mark_name_edited(session=session, user_id=user_uuid)
+
+    with patch("app.crud._set_step", side_effect=set_step):
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            first = pool.submit(mark, True)
+            second = pool.submit(mark, False)
+            try:
+                assert second_attempt.wait(timeout=10)
+                # Unlocked code lets the second transition use stale progress.
+                second_set.wait(timeout=1)
+            finally:
+                release_first.set()
+            first.result(timeout=10)
+            second.result(timeout=10)
+
+    progress = _onboarding_rows(db, user_id)[0]
+    assert progress.first_item_at is not None
+    assert progress.name_edited_at is not None
+    assert progress.invite_sent_at is not None
+    assert progress.completed_at == max(
+        progress.first_item_at, progress.name_edited_at, progress.invite_sent_at
+    )
+    assert _get_onboarding_me(client, headers).json()["completed"] is True
 
 
 def test_onboarding_me_without_record_is_not_found(

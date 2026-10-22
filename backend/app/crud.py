@@ -79,7 +79,7 @@ def create_onboarding(*, session: Session, user_id: uuid.UUID) -> Onboarding:
 
 def _mark_step(*, session: Session, user_id: uuid.UUID, step: str) -> None:
     # Users without a row are not onboarding.
-    onboarding = session.get(Onboarding, user_id)
+    onboarding = lock_onboarding(session=session, user_id=user_id)
     if onboarding is None:
         return
     _set_step(onboarding=onboarding, step=step)
@@ -116,10 +116,13 @@ def mark_name_edited(*, session: Session, user_id: uuid.UUID) -> None:
 def lock_onboarding(*, session: Session, user_id: uuid.UUID) -> Onboarding | None:
     """
     Read a user's onboarding row and lock it until the session's transaction
-    ends, so concurrent invites check and increment the count one at a time.
+    ends, so all step transitions use current progress one at a time.
     """
     statement = (
-        select(Onboarding).where(Onboarding.user_id == user_id).with_for_update()
+        select(Onboarding)
+        .where(Onboarding.user_id == user_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
     )
     return session.exec(statement).first()
 
